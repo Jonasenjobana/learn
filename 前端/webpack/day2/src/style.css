@@ -1,0 +1,62 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #1f2937;
+  font-family: Arial, 'Microsoft YaHei', sans-serif;
+  background: #f4f7fb;
+}
+
+.page {
+  width: min(920px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 40px;
+  line-height: 1.15;
+}
+
+.intro {
+  margin: 0 0 24px;
+  color: #4b5563;
+  font-size: 18px;
+}
+
+.hero-image {
+  display: block;
+  width: min(420px, 100%);
+  margin: 0 0 24px;
+}
+
+.note {
+  margin: 0 0 24px;
+  padding: 16px;
+  overflow: auto;
+  color: #243b53;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+}
+
+.background-box {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  background:
+    linear-gradient(rgba(15, 23, 42, 0.46), rgba(15, 23, 42, 0.46)),
+    url('./assets/pattern.svg') center / cover;
+  border-radius: 8px;
+}

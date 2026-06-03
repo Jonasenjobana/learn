@@ -1,0 +1,8 @@
+<svg width="640" height="360" viewBox="0 0 640 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="360" rx="24" fill="#E8F3FF"/>
+  <rect x="52" y="64" width="536" height="232" rx="18" fill="#FFFFFF" stroke="#8AB4F8" stroke-width="4"/>
+  <path d="M110 132h150M110 178h250M110 224h190" stroke="#2563EB" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="478" cy="178" r="58" fill="#34D399"/>
+  <path d="M452 178l18 18 38-42" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="110" y="282" fill="#1F2937" font-family="Arial, sans-serif" font-size="28" font-weight="700">Asset Modules</text>
+</svg>
