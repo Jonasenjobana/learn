@@ -1,0 +1,10 @@
+{
+  "name": "docker-day2-node-demo",
+  "version": "1.0.0",
+  "description": "Docker Day2 Node demo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "ISC"
+}

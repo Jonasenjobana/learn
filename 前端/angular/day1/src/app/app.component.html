@@ -1,0 +1,133 @@
+<main class="page">
+  <section class="intro">
+    <p class="eyebrow">Angular 22</p>
+    <h1>Signal Forms Demo</h1>
+    <p>
+      这个例子用 <code>@angular/forms/signals</code> 演示 signal model、schema 校验、条件表单逻辑和提交处理。
+    </p>
+  </section>
+
+  <section class="layout">
+    <form class="panel form-panel" novalidate (submit)="onSubmit($event)">
+      <div class="field">
+        <label for="name">姓名</label>
+        <input id="name" type="text" [formField]="signupForm.name" placeholder="小明" />
+        @if (signupForm.name().touched() && signupForm.name().invalid()) {
+          <ul class="errors">
+            @for (error of signupForm.name().errors(); track error) {
+              <li>{{ error.message }}</li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="field">
+        <label for="email">邮箱</label>
+        <input id="email" type="email" [formField]="signupForm.email" placeholder="xiaoming@example.com" />
+        @if (signupForm.email().touched() && signupForm.email().invalid()) {
+          <ul class="errors">
+            @for (error of signupForm.email().errors(); track error) {
+              <li>{{ error.message }}</li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label for="password">密码</label>
+          <input id="password" type="password" [formField]="signupForm.password" placeholder="至少 8 位" />
+          @if (signupForm.password().touched() && signupForm.password().invalid()) {
+            <ul class="errors">
+              @for (error of signupForm.password().errors(); track error) {
+                <li>{{ error.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+
+        <div class="field">
+          <label for="confirmPassword">确认密码</label>
+          <input id="confirmPassword" type="password" [formField]="signupForm.confirmPassword" />
+          @if (signupForm.confirmPassword().touched() && signupForm.confirmPassword().invalid()) {
+            <ul class="errors">
+              @for (error of signupForm.confirmPassword().errors(); track error) {
+                <li>{{ error.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+
+      <label class="check-row">
+        <input type="checkbox" [formField]="signupForm.wantsNewsletter" />
+        订阅 newsletter
+      </label>
+
+      @if (!signupForm.newsletterEmail().hidden()) {
+        <div class="field">
+          <label for="newsletterEmail">newsletter 接收邮箱</label>
+          <input id="newsletterEmail" type="email" [formField]="signupForm.newsletterEmail" />
+          @if (signupForm.newsletterEmail().touched() && signupForm.newsletterEmail().invalid()) {
+            <ul class="errors">
+              @for (error of signupForm.newsletterEmail().errors(); track error) {
+                <li>{{ error.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      <label class="check-row">
+        <input type="checkbox" [formField]="signupForm.hasReferral" />
+        我有邀请码
+      </label>
+
+      <div class="field">
+        <label for="referralCode">邀请码</label>
+        <input id="referralCode" type="text" [formField]="signupForm.referralCode" placeholder="REF-2026" />
+        @if (signupForm.referralCode().disabled()) {
+          <p class="hint">
+            @for (reason of signupForm.referralCode().disabledReasons(); track reason) {
+              {{ reason.message }}
+            }
+          </p>
+        }
+        @if (signupForm.referralCode().touched() && signupForm.referralCode().invalid()) {
+          <ul class="errors">
+            @for (error of signupForm.referralCode().errors(); track error) {
+              <li>{{ error.message }}</li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="actions">
+        <button type="submit" [disabled]="signupForm().invalid()">提交</button>
+        <button type="button" class="secondary" (click)="resetDemo()">重置</button>
+      </div>
+    </form>
+
+    <aside class="panel state-panel">
+      <h2>Signal model</h2>
+      <pre>{{ formValueJson() }}</pre>
+
+      <h2>Form state</h2>
+      <dl>
+        <div>
+          <dt>valid</dt>
+          <dd>{{ signupForm().valid() }}</dd>
+        </div>
+        <div>
+          <dt>invalid</dt>
+          <dd>{{ signupForm().invalid() }}</dd>
+        </div>
+      </dl>
+
+      @if (submitted()) {
+        <h2>Submitted</h2>
+        <pre>{{ submitted() | json }}</pre>
+      }
+    </aside>
+  </section>
+</main>
