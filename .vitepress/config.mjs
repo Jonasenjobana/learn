@@ -17,6 +17,7 @@ export default defineConfig({
       { text: 'Node 基础', link: '/Node基础/' },
       { text: '前端', link: '/前端/webpack/' },
       { text: '后端', link: '/后端/数据库/' },
+      { text: '运维', link: '/运维/docker/' },
       { text: 'CI/CD', link: '/CICD/' }
     ],
     sidebar: {
@@ -75,6 +76,17 @@ export default defineConfig({
           ]
         }
       ],
+      '/运维/': [
+        {
+          text: 'Docker',
+          items: [
+            { text: '总览', link: '/运维/docker/' },
+            { text: 'Day1', link: '/运维/docker/day1/' },
+            { text: 'Day2', link: '/运维/docker/day2/' },
+            { text: 'Day3', link: '/运维/docker/day3/' }
+          ]
+        }
+      ],
       '/CICD/': [
         {
           text: 'GitHub Actions CI/CD',
@@ -95,6 +107,7 @@ export default defineConfig({
             { text: 'Node 基础', link: '/Node基础/' },
             { text: 'Webpack', link: '/前端/webpack/' },
             { text: '数据库', link: '/后端/数据库/' },
+            { text: 'Docker', link: '/运维/docker/' },
             { text: 'CI/CD', link: '/CICD/' }
           ]
         }
