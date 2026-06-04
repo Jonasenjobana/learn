@@ -12,6 +12,71 @@ webpack 是一个现代 JavaScript 应用的静态模块打包工具。它会从
 - [day2：静态资源与生产构建](./day2/)
 - [day3：Babel 与代码分割](./day3/)
 
+## 阶段总结
+
+| 阶段 | 主题 | 学完后应掌握 | 入口 |
+| --- | --- | --- | --- |
+| Day1 | 基础配置与资源引入 | 跑通 webpack 最小项目，理解 `entry`、`output`、`loader`、`plugin`、dev-server 和基础资源引入 | [day1](./day1/) |
+| Day2 | 静态资源与生产构建 | 使用 Asset Modules 处理图片、字体、文本，区分 `src/assets` 和 `public`，理解 `contenthash` 和 CSS 抽离 | [day2](./day2/) |
+| Day3 | Babel 与代码分割 | 使用 Babel 处理 JS 兼容性，理解动态导入、异步 chunk、`splitChunks` 和 `runtimeChunk` | [day3](./day3/) |
+
+### Day1 总结：基础配置与资源引入
+
+Day1 的目标是把 webpack 项目跑起来，重点不是追求复杂配置，而是先理解 webpack 如何从入口文件开始打包。
+
+重点内容：
+
+- `webpack.config.js` 的基本结构。
+- `entry` 和 `output` 的作用。
+- `html-webpack-plugin` 自动生成 HTML。
+- `webpack-dev-server` 启动本地开发服务。
+- `css-loader`、`style-loader` 处理 CSS。
+- 通过 JS 引入图片资源。
+
+适合目标：
+
+- 能执行 `npm run dev` 启动开发环境。
+- 能执行 `npm run build` 输出 `dist`。
+- 能看懂一个最小 webpack 项目的目录结构。
+
+### Day2 总结：静态资源与生产构建
+
+Day2 在 Day1 基础上补齐真实项目常见的静态资源处理能力，并开始关注生产环境输出。
+
+重点内容：
+
+- webpack 5 Asset Modules。
+- `asset/resource`、`asset/inline`、`asset/source`、`asset` 的区别。
+- 图片、SVG、字体、文本资源处理。
+- `public/static` 原样复制。
+- 生产环境 CSS 抽离。
+- `contenthash` 和浏览器缓存。
+
+适合目标：
+
+- 能解释哪些资源应该放 `src/assets`，哪些应该放 `public`。
+- 能观察 `dist/images`、`dist/css`、`dist/static` 的输出。
+- 能理解为什么生产构建文件名通常带 hash。
+
+### Day3 总结：Babel 与代码分割
+
+Day3 开始进入工程化进阶，重点是 JS 兼容性和首屏性能优化。
+
+重点内容：
+
+- webpack 和 Babel 的职责区别。
+- `babel-loader` 与 `@babel/preset-env`。
+- `browserslist` / `targets` 对输出代码的影响。
+- `import()` 动态导入。
+- 异步 chunk 文件。
+- `optimization.splitChunks` 和 `runtimeChunk`。
+
+适合目标：
+
+- 能说明 Babel 为什么不是打包器。
+- 能通过点击按钮触发异步模块加载。
+- 能对比普通导入和动态导入的构建结果。
+
 可以把它理解为：
 
 - `entry`：从哪里开始找依赖。
