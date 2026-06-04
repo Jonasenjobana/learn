@@ -3,6 +3,21 @@
 这个仓库用于整理编程、前端、后端、AI、运维、CI/CD 等学习资料。  
 后续 AI 在本仓库生成学习文档时，应优先沿用现有 `day1`、`day2`、`day3` 这种阶段式风格，不要随意另起一套目录结构。
 
+## VitePress 站点
+
+本仓库已配置为 VitePress 文档站点，可以把现有 Markdown 目录直接构建成静态站点。
+
+常用命令：
+
+```bash
+npm install
+npm run docs:dev
+npm run docs:build
+npm run docs:preview
+```
+
+GitHub Actions 会在推送到 `master` 或 `main` 分支后自动安装依赖、重新构建 VitePress，并部署到 GitHub Pages。首次使用前，需要在 GitHub 仓库的 `Settings -> Pages` 中把 Source 设置为 `GitHub Actions`。
+
 ## 总体原则
 
 - 始终使用简体中文。

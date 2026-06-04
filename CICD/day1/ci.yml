@@ -1,0 +1,25 @@
+name: Day1 CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Print workspace
+        run: |
+          pwd
+          ls
+          echo "GitHub Actions is running"
+
+      - name: Print runtime
+        run: |
+          node -v
+          npm -v
