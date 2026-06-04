@@ -39,6 +39,9 @@ jobs:
             echo "VITEPRESS_BASE=/${{ github.event.repository.name }}/" >> "$GITHUB_ENV"
           fi
 
+      - name: Update VitePress routes
+        run: npm run docs:routes
+
       - name: Build VitePress
         run: npm run docs:build
 
