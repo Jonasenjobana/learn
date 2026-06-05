@@ -217,6 +217,23 @@ export const sidebar = {
           "link": "/前端/leaflet/"
         }
       ]
+    },
+    {
+      "text": "Three.js 入门到三维场景指南",
+      "items": [
+        {
+          "text": "总览",
+          "link": "/前端/threejs/"
+        },
+        {
+          "text": "Day1",
+          "link": "/前端/threejs/day1/"
+        },
+        {
+          "text": "练习题",
+          "link": "/前端/threejs/day1/练习题.html"
+        }
+      ]
     }
   ],
   "/后端/": [
