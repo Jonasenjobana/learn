@@ -12,7 +12,7 @@ export interface SLCanvasRenderTool {
   map: L.Map;
   layer: SLCanvasLayer;
   /** animeLoop 图层渲染时的动画时间 */
-  tick: SLCanvasRenderTick;
+  tick?: SLCanvasRenderTick;
 }
 export interface SLCanvasTextRenderTool extends SLCanvasRenderTool {
   box: ABBox;
@@ -35,6 +35,12 @@ export interface SLCanvasHoverState {
 export interface SLCanvasHitCandidate {
   layer: SLCanvasLayer;
   box: ABBox;
+}
+/** 待渲染文字任务，保留原始 textBox，不重新计算文本位置 */
+interface SLCanvasTextTask {
+  layer: SLCanvasLayer;
+  box: ABBox;
+  index: number;
 }
 export interface SLCanvasOption {
   level?: number;
@@ -106,29 +112,48 @@ export class SLMapLayerManager extends EventDispatch {
     this.layerRenderTask();
   };
   renderTextTask = () => {
-    // 文字避让是全局规则：level 高的先占位，level 相同时 textLevel 高的先占位。
+    // 普通文字参与 rbush 避让；hover/active 文字最后叠加绘制，不影响其他文字布局。
     const textRBush = new rbush();
     this.getActiveLayers().forEach((layer) => layer.setVisibleTextBoxes([]));
-    const textSortLayer = this.getActiveLayers()
+    const visibleTextBoxMap = new Map<SLCanvasLayer, ABBox[]>();
+    const textTasks = this.getActiveLayers()
       .filter((layer) => layer.option.textOverlap)
+      .reduce((tasks: SLCanvasTextTask[], layer) => {
+        layer.textBoxes.forEach((box, index) => {
+          if (!box || box.isEmpty) return;
+          tasks.push({ layer, box, index });
+        });
+        return tasks;
+      }, []);
+    textTasks.sort((a, b) => this.compareTextTask(a, b)).forEach(({ layer, box }) => {
+      const rbushBox = { ...box.rbush, data: box };
+      if (textRBush.search(rbushBox).length > 0) return;
+      textRBush.insert(rbushBox);
+      this.pushVisibleTextBox(visibleTextBoxMap, layer, box);
+      layer.onRenderText(box);
+    });
+    textTasks
+      .filter((task) => this.getTextStateLevel(task) > 0)
       .sort((a, b) => {
-        const levelDiff = this.getLayerLevel(b) - this.getLayerLevel(a);
-        if (levelDiff !== 0) return levelDiff;
-        return this.getLayerTextLevel(b) - this.getLayerTextLevel(a);
-      });
-    textSortLayer.forEach((layer) => {
-      const visibleTextBoxes: ABBox[] = [];
-      layer.textBoxes.forEach((box) => {
-        if (!box || box.isEmpty) return;
-        const rbushBox = { ...box.rbush, data: box };
-        if (textRBush.search(rbushBox).length > 0) return;
-        textRBush.insert(rbushBox);
-        visibleTextBoxes.push(box);
+        const stateDiff = this.getTextStateLevel(a) - this.getTextStateLevel(b);
+        if (stateDiff !== 0) return stateDiff;
+        return this.compareTextTask(a, b);
+      })
+      .forEach(({ layer, box }) => {
+        // hover/active 文本相当于 overlay，直接最后绘制，不写入 textRBush。
+        this.pushVisibleTextBox(visibleTextBoxMap, layer, box);
         layer.onRenderText(box);
       });
-      layer.setVisibleTextBoxes(visibleTextBoxes);
+    visibleTextBoxMap.forEach((boxes, layer) => {
+      layer.setVisibleTextBoxes(boxes);
     });
   };
+  private pushVisibleTextBox(visibleTextBoxMap: Map<SLCanvasLayer, ABBox[]>, layer: SLCanvasLayer, box: ABBox) {
+    const visibleTextBoxes = visibleTextBoxMap.get(layer) || [];
+    if (visibleTextBoxes.some((visibleBox) => layer.getBoxKey(visibleBox) === layer.getBoxKey(box))) return;
+    visibleTextBoxes.push(box);
+    visibleTextBoxMap.set(layer, visibleTextBoxes);
+  }
   interactiveTask = (event: L.LeafletEvent) => {
     const mouseEvent = event as L.LeafletMouseEvent;
     if (!mouseEvent || !mouseEvent.containerPoint) return;
@@ -185,6 +210,42 @@ export class SLMapLayerManager extends EventDispatch {
       this.layerRenderTask();
     }
   }
+  /** 隐藏图层（保留记录，可随时 show 恢复） */
+  hideCanvasLayer(name: string) {
+    const layer = this.canvasLayerMap.get(name);
+    if (layer && this.map.hasLayer(layer)) {
+      this.map.removeLayer(layer);
+      this.layerRenderTask();
+    }
+  }
+  /** 显示之前隐藏的图层 */
+  showCanvasLayer(name: string) {
+    const layer = this.canvasLayerMap.get(name);
+    if (layer && !this.map.hasLayer(layer)) {
+      this.map.addLayer(layer);
+      this.layerRenderTask();
+    }
+  }
+  /** 触发重绘（外部数据变更后调用） */
+  redrawCanvasLayer(name?: string) {
+    if (name) {
+      const layer = this.canvasLayerMap.get(name);
+      if (layer && this.map.hasLayer(layer)) {
+        layer.onReset();
+        this.renderTextTask();
+      }
+      return;
+    }
+    this.layerRenderTask();
+  }
+  clearActiveState(layer?: SLCanvasLayer) {
+    // 指定 layer 时只清理该图层的 active，避免误清其他业务图层选中态。
+    if (layer && this.activeState.layer !== layer) return;
+    if (!this.activeState.layer) return;
+    this.activeState.layer.setActiveBoxes([]);
+    this.activeState = { layer: null, hits: [] };
+    this.layerRenderTask();
+  }
   private getActiveLayers() {
     return [...this.canvasLayerMap.values()].filter((layer) => this.map.hasLayer(layer));
   }
@@ -193,6 +254,19 @@ export class SLMapLayerManager extends EventDispatch {
   }
   private getLayerTextLevel(layer: SLCanvasLayer) {
     return layer.option.textLevel || 0;
+  }
+  private compareTextTask(a: SLCanvasTextTask, b: SLCanvasTextTask) {
+    const levelDiff = this.getLayerLevel(b.layer) - this.getLayerLevel(a.layer);
+    if (levelDiff !== 0) return levelDiff;
+    const textLevelDiff = this.getLayerTextLevel(b.layer) - this.getLayerTextLevel(a.layer);
+    if (textLevelDiff !== 0) return textLevelDiff;
+    if (a.layer === b.layer) return a.index - b.index;
+    return 0;
+  }
+  private getTextStateLevel(task: SLCanvasTextTask) {
+    if (task.layer.isActive(task.box)) return 2;
+    if (task.layer.isHover(task.box)) return 1;
+    return 0;
   }
   private getInteractiveLayers() {
     return this.getActiveLayers()
@@ -203,7 +277,7 @@ export class SLMapLayerManager extends EventDispatch {
     // 生成完整命中栈：图层按 level 高优先，图层内部顺序交给 searchHit / hitSort。
     return this.getInteractiveLayers().reduce((candidates: SLCanvasHitCandidate[], layer) => {
       const layerHits = layer.searchHit(x, y);
-      layerHits.forEach((box) => candidates.push({ layer, box }));
+      layerHits.forEach((box: any) => candidates.push({ layer, box }));
       return candidates;
     }, []);
   }
@@ -216,9 +290,20 @@ export class SLMapLayerManager extends EventDispatch {
     return candidates[activeIndex >= 0 ? (activeIndex + 1) % candidates.length : 0];
   }
   private setCursor(cursor: string) {
-    if (this.cursor === cursor) return;
     this.cursor = cursor;
-    this.map.getContainer().style.cursor = cursor;
+    this.applyCursor(cursor);
+  }
+  private applyCursor(cursor: string) {
+    // Leaflet 拖拽态会给容器/图层加 grab，cursor 要同步写到 canvas 才能稳定覆盖。
+    const elements = [this.map.getContainer(), ...this.getActiveLayers().map((layer) => layer.getCanvasElement())];
+    elements.forEach((element) => {
+      if (!element) return;
+      if (cursor) {
+        element.style.setProperty("cursor", cursor, "important");
+      } else {
+        element.style.removeProperty("cursor");
+      }
+    });
   }
   private createLayerEvent(rawEvent: L.LeafletMouseEvent, layer: SLCanvasLayer, hits: ABBox[]): SLCanvasLayerEvent {
     return { rawEvent, layer, hits };
@@ -275,6 +360,8 @@ export class SLCanvasLayer extends L.Layer {
   hitRBush = new rbush();
   private hoverKeys: Set<string> = new Set();
   private activeKeys: Set<string> = new Set();
+  private defaultKeyIndex = 0;
+  private defaultObjectKeyMap: WeakMap<object, string> = new WeakMap();
   protected canvas: HTMLCanvasElement = document.createElement("canvas");
   protected ctx: CanvasRenderingContext2D = this.canvas.getContext("2d")!;
   protected render: (tool: SLCanvasRenderTool) => SLCanvasRenderResult | void;
@@ -337,6 +424,9 @@ export class SLCanvasLayer extends L.Layer {
     this.activeBoxes = boxes;
     this.activeKeys = new Set(boxes.map((box) => this.getBoxKey(box)));
   }
+  getCanvasElement() {
+    return this.canvas;
+  }
   isHover(dataOrBox: any) {
     return this.hoverKeys.has(this.getStateKey(dataOrBox));
   }
@@ -344,7 +434,7 @@ export class SLCanvasLayer extends L.Layer {
     return this.activeKeys.has(this.getStateKey(dataOrBox));
   }
   getBoxKey(box: ABBox) {
-    const key = this.option.getBoxKey ? this.option.getBoxKey(box) : this.getDefaultDataKey(box.data);
+    const key = this.option.getBoxKey ? this.option.getBoxKey(box) : this.getDefaultBoxKey(box);
     return key + "";
   }
   onReset() {
@@ -369,10 +459,21 @@ export class SLCanvasLayer extends L.Layer {
     if (dataOrBox && typeof dataOrBox.isHit === "function" && dataOrBox.rbush) {
       return this.getBoxKey(dataOrBox as ABBox);
     }
-    return this.getDefaultDataKey(dataOrBox) + "";
+    return this.option.getBoxKey ? this.option.getBoxKey(new ABBox(dataOrBox)) + "" : this.getDefaultValueKey(dataOrBox);
   }
-  private getDefaultDataKey(data: any) {
-    return data?.id ?? data?.mmsi ?? data?.name ?? "";
+  private getDefaultBoxKey(box: ABBox) {
+    return this.getDefaultValueKey(box.data ?? box);
+  }
+  private getDefaultValueKey(value: any) {
+    // 框架层不假设 id/mmsi/name 等业务字段；未配置 getBoxKey 时仅按对象身份兜底。
+    if (value === null || value === undefined) return "";
+    if (typeof value !== "object" && typeof value !== "function") return `${typeof value}:${value}`;
+    const objectValue = value as object;
+    const cachedKey = this.defaultObjectKeyMap.get(objectValue);
+    if (cachedKey) return cachedKey;
+    const key = `object:${++this.defaultKeyIndex}`;
+    this.defaultObjectKeyMap.set(objectValue, key);
+    return key;
   }
 
   /** 初始化 canvas，并挂到 Leaflet 缩放体系中 */
